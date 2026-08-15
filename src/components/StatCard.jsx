@@ -1,3 +1,4 @@
+import { supabase } from '../config/supabase'
 function StatCard({ title, total }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 border-t-4 border-t-sky-500 p-6 shadow-sm">

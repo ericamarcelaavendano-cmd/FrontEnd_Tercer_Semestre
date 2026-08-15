@@ -1,3 +1,5 @@
+import { supabase } from '../config/supabase'
+
 import StatCard from '../components/StatCard'
 
 function Dashboard() {

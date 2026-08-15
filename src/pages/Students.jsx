@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+
 import { getStudents, buscarEstudiantesPorNombre } from '../services/studentService'
 import Footer from '../components/Footer'
+import Nav from '../components/Nav'
 
 function Students() {
   const [students, setStudents] = useState([])
@@ -42,7 +43,7 @@ function Students() {
           <p className="text-slate-500 text-sm">Estudiantes registrados</p>
         </div>
         <button className="bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-600">
-          + Nuevo Estudiante
+          + New Student
         </button>
       </header>
 

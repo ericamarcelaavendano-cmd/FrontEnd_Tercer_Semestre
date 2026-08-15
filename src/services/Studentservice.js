@@ -1,6 +1,5 @@
 import { supabase } from '../config/supabase'
 
-// Trae todos los estudiantes, del más reciente al más antiguo
 export async function getStudents() {
   const { data, error } = await supabase
     .from('students')
