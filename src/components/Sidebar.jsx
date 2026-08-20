@@ -11,7 +11,7 @@ const links = [
 // Dato simulado por ahora — se reemplaza por el usuario real cuando se implemente autenticación
 const usuarioActual = {
   nombre: 'Erica Avendaño',
-  rol: 'Administrador', // o 'Docente'
+  rol: 'Administrador', 
 }
 
 function Sidebar() {

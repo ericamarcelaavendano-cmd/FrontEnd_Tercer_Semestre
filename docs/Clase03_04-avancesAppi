@@ -1,0 +1,246 @@
+# Clase 03 y Clase 04 — Componentización: Header, Tablas y Servicios Completos
+
+**Proyecto:** Sistema de Gestión de Cursos ("Gestión Académica")
+**Estudiante:** Erica Avendaño 
+**Docente:** Luis Alberto Goenaga
+**Tecnologías:** React + Vite + Tailwind CSS + React Router + Supabase
+
+---
+
+## 1. Introducción
+
+Esta sesión se centró en **reorganizar el código en componentes reutilizables**, siguiendo el patrón sugerido por el instructivo maestro (`components/StudentTable.jsx`, `CourseTable.jsx`, `EnrollmentTable.jsx`) y por el ejemplo mostrado en clase por el docente (un `Header.jsx` genérico para encabezar cada página). También se completó la conexión de **Courses** y **Enrollments** con datos reales de Supabase, replicando el patrón ya validado con Students en la Clase 02.
+
+## 2. Alcance
+
+Cubre: la creación de un componente `Header` reutilizable para las 4 páginas, la extracción de las tablas de cada entidad a sus propios componentes con columnas configurables por props, el servicio de cursos (`courseService.js`), el servicio de matrículas (`enrollmentService.js`) con datos combinados de 3 tablas mediante joins de Supabase, y la corrección de errores de importación surgidos durante el proceso.
+
+## 3. Objetivos
+
+- Crear un componente `Header` reutilizable para el encabezado de cada página (título, descripción, botón de acción).
+- Extraer la lógica visual de las tablas a componentes propios (`StudentTable`, `CourseTable`, `EnrollmentTable`), usando **props** para pasar los datos y el estado de carga.
+- Definir las columnas de cada tabla mediante un arreglo de configuración, en lugar de escribir cada `<th>`/`<td>` a mano.
+- Construir `courseService.js` y conectar `Courses.jsx` con datos reales.
+- Construir `enrollmentService.js`, combinando datos de `students`, `courses` y `enrollments` en una sola consulta.
+- Practicar el diagnóstico de errores comunes de React (`is not defined`) mediante la consola del navegador.
+
+---
+
+## 4. Componente `Header` — encabezado reutilizable de página
+
+```jsx
+function Header({ title, description, txtButton }) {
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-slate-800">{title}</h1>
+          <p className="text-slate-500 mt-1">{description}</p>
+        </div>
+        <div>
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            {txtButton}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Header
+```
+
+**Uso mediante props**, igual en las 4 páginas, cambiando solo el texto:
+
+```jsx
+<Header title="Students" description="Estudiantes registrados en Supabase" txtButton="+ Nuevo Estudiante" />
+<Header title="Courses" description="Cursos registrados en Supabase" txtButton="+ Nuevo Curso" />
+<Header title="Enrollments" description="Matrículas registradas en Supabase" txtButton="+ Nueva Matrícula" />
+<Header title="Dashboard" description="Bienvenido al Sistema de Gestión Académica" txtButton="" />
+```
+
+Este componente evita repetir el mismo bloque de HTML en cada página — cualquier ajuste visual futuro al encabezado (tamaño de letra, color del botón) se hace en un solo archivo y se refleja en las 4 páginas.
+
+---
+
+## 5. Patrón de "columnas configurables" para las tablas
+
+En lugar de escribir cada celda de la tabla a mano, se definió un arreglo de configuración por tabla, donde cada objeto indica qué campo de Supabase mostrar (`key`) y con qué texto (`label`):
+
+```js
+const columnas = [
+  { key: 'first_name', label: 'Nombre' },
+  { key: 'last_name', label: 'Apellido' },
+  { key: 'email', label: 'Correo' },
+  { key: 'birth_date', label: 'Fecha de nacimiento' },
+]
+```
+
+Y tanto el encabezado como las filas se generan recorriendo ese mismo arreglo:
+
+```jsx
+<thead>
+  <tr>
+    {columnas.map((col) => <th key={col.key}>{col.label}</th>)}
+  </tr>
+</thead>
+<tbody>
+  {students.map((est) => (
+    <tr key={est.id}>
+      {columnas.map((col) => <td key={col.key}>{est[col.key]}</td>)}
+    </tr>
+  ))}
+</tbody>
+```
+
+**Concepto clave — `est[col.key]`:** en JavaScript, `objeto.propiedad` y `objeto['propiedad']` son equivalentes. Como `col.key` es una variable que contiene el nombre del campo (por ejemplo `"first_name"`), `est[col.key]` accede dinámicamente a ese campo del estudiante, sin tener que escribir `est.first_name` a mano. Así, agregar una columna nueva a la tabla es solo agregar una línea al arreglo `columnas`, sin tocar el resto del componente.
+
+**Ventaja práctica:** el `id` (uuid) de cada registro no se incluye en `columnas` porque no aporta valor visual al usuario, pero sí se sigue usando internamente como `key` de React en cada fila (`<tr key={est.id}>`), que es distinto al `key` de la configuración de columnas.
+
+---
+
+## 6. Componentes de tabla por entidad
+
+### `src/components/StudentTable.jsx`
+
+Recibe `students` (arreglo de datos) y `cargando` (booleano) como props, y se encarga únicamente de dibujar la tabla — no sabe nada de Supabase ni de cómo se obtuvieron los datos. Incluye el manejo de los 3 estados posibles: cargando, sin resultados, y con datos.
+
+### `src/components/CourseTable.jsx`
+
+Mismo patrón, con columnas propias de `courses`: `code`, `name`, `description`, `max_capacity`.
+
+### `src/components/EnrollmentTable.jsx`
+
+Este componente presentó una diferencia importante: como los datos de matrícula combinan información de 3 tablas, en lugar de `key` cada columna usa una función `render`:
+
+```js
+const columnas = [
+  { label: 'Estudiante', render: (e) => `${e.students?.first_name ?? ''} ${e.students?.last_name ?? ''}` },
+  { label: 'Curso', render: (e) => e.courses?.name ?? '' },
+  { label: 'Fecha', render: (e) => e.enrollment_date },
+  { label: 'Estado', render: (e) => e.status },
+]
+```
+
+**Por qué se necesita `render` en lugar de `key` aquí:** los datos que trae `enrollmentService.js` no son planos — `e.students` y `e.courses` son objetos anidados dentro de cada matrícula (ver sección 8). La función `render` permite construir el contenido de la celda con lógica propia (por ejemplo, unir nombre y apellido en un solo texto), algo que un simple `est[col.key]` no podría resolver.
+
+**Operador `?.` (optional chaining) y `??` (nullish coalescing):** `e.students?.first_name` significa "si `e.students` existe, entra a buscar `first_name`; si no, no falles, devuelve `undefined`". El `??`  posterior ("si el resultado es `null` o `undefined`, usa esto otro en su lugar") evita que aparezca la palabra "undefined" en pantalla si algún dato llegara incompleto.
+
+---
+
+## 7. Servicio de cursos: `courseService.js`
+
+```js
+import { supabase } from '../config/supabase'
+
+export async function getCourses() {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error al obtener cursos:', error.message)
+    return []
+  }
+
+  return data
+}
+
+export async function buscarCursosPorNombre(texto) {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('*')
+    .or(`name.ilike.%${texto}%,code.ilike.%${texto}%`)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error al buscar cursos:', error.message)
+    return []
+  }
+
+  return data
+}
+```
+
+Estructura idéntica a `studentService.js` (Clase 02), reforzando el patrón repetible de servicios: listar todo, y buscar con coincidencia parcial.
+
+---
+
+## 8. Servicio de matrículas: `enrollmentService.js` (con joins)
+
+```js
+import { supabase } from '../config/supabase'
+
+export async function getEnrollments() {
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select(`
+      id,
+      enrollment_date,
+      status,
+      students ( first_name, last_name ),
+      courses ( name, code )
+    `)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error al obtener matrículas:', error.message)
+    return []
+  }
+
+  return data
+}
+```
+
+**Concepto nuevo — joins anidados con `supabase-js`:** dentro del `.select()`, escribir `students ( first_name, last_name )` le indica a Supabase que, aprovechando la foreign key `student_id` que ya existe en la tabla `enrollments`, traiga también esos campos del estudiante relacionado, anidados dentro de cada resultado:
+
+```json
+{
+  "id": "...",
+  "enrollment_date": "2026-01-10",
+  "status": "ACTIVE",
+  "students": { "first_name": "Yeraldin", "last_name": "Gutierrez" },
+  "courses": { "name": "Backend II - Java Spring Boot", "code": "BE2-JAVA" }
+}
+```
+
+Esto evita tener que hacer 3 consultas separadas (una a `enrollments`, otra a `students`, otra a `courses`) y luego combinarlas manualmente en JavaScript — Supabase resuelve la relación en una sola llamada.
+
+---
+
+## 9. Conexión de `Courses.jsx` y `Enrollments.jsx`
+
+Ambas páginas siguen la misma estructura que `Students.jsx` de la Clase 02: `useState` para guardar los datos y el estado de carga, `useEffect` para disparar la consulta al servicio correspondiente, y el componente `Header` + tabla propia para la presentación. `Courses.jsx` incluye buscador en tiempo real con debounce; `Enrollments.jsx`, al depender de datos combinados, se dejó por ahora con carga simple (sin buscador todavía).
+
+---
+
+## 10. Problemas encontrados y solución
+
+| Problema | Causa | Solución |
+|---|---|---|
+| `Uncaught ReferenceError: Footer is not defined` (en `Nav.jsx`) | El componente usaba `<Footer />` sin haberlo importado al inicio del archivo | Se agregó `import Footer from './Footer'` |
+| `Uncaught ReferenceError: useState is not defined` (en `Students.jsx`) | Faltaba `useState` en la línea de import de React | Se corrigió a `import { useEffect, useState } from 'react'` |
+| Pantalla en blanco general | Ambos errores anteriores ocurrían en componentes usados por todas las páginas (Sidebar/Layout), por lo que un error en un solo archivo rompía toda la aplicación | Se diagnosticó mediante la consola del navegador (F12 → Console), identificando archivo y línea exactos en cada caso |
+
+**Aprendizaje clave de esta sección:** en React, cualquier función o componente utilizado que no venga incluido por defecto en el lenguaje debe importarse explícitamente al inicio del archivo. Si falta el import, la aplicación completa deja de renderizar (pantalla en blanco), incluso si el error está en un componente aparentemente ajeno a la página que se está visitando — esto ocurre porque componentes como el Sidebar o un Nav se renderizan en todas las rutas.
+
+---
+
+## 11. Checklist de la clase
+
+- [x] `Header.jsx` reutilizable, usado en las 4 páginas mediante props
+- [x] `StudentTable.jsx`, `CourseTable.jsx`, `EnrollmentTable.jsx` creados con columnas configurables
+- [x] `courseService.js` con funciones de listar y buscar
+- [x] `enrollmentService.js` con consulta combinada (joins) de las 3 tablas
+- [x] `Courses.jsx` conectada a datos reales, con buscador
+- [x] `Enrollments.jsx` conectada a datos reales, mostrando estudiante + curso + estado combinados
+- [x] Errores de importación diagnosticados y corregidos mediante consola del navegador
+
+---
+
+## 12. Próximos pasos
+
+- Agregar buscador y/o filtro por estado a `Enrollments.jsx`.
+- Mejorar la presentación visual del estado de la matrícula (badges de color), tema iniciado en la Clase 04.
+- Iniciar la Fase 3 del instructivo maestro: formularios de creación y edición (`StudentForm.jsx`, `CourseForm.jsx`, `EnrollmentForm.jsx`).

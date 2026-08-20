@@ -362,3 +362,5 @@ function Students() {
 - Construir `enrollmentService.js`, incluyendo selects dinámicos de estudiantes y cursos para crear nuevas matrículas.
 - Actualizar el Dashboard con las 6 métricas reales (Total Students, Total Courses, Total Enrollments, Active, Completed, Cancelled Enrollments).
 - Iniciar la Fase 3 del instructivo maestro: CRUD completo de Students (Create, Update, Delete), actualmente solo con la operación List funcional.
+
+Asi vamos construyendo paso a paso esta App atraves del aprendizaje donde se va viendo cada uno de los avances 

@@ -27,7 +27,7 @@ function Students() {
     <div>
       <Header
         title="Students"
-        description="Estudiantes registrados en Supabase"
+        description="Estudiantes registrados"
         txtButton="+ Nuevo Estudiante"
       />
 
