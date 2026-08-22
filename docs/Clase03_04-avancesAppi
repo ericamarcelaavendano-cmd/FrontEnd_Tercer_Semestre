@@ -24,7 +24,6 @@ Cubre: la creación de un componente `Header` reutilizable para las 4 páginas, 
 - Construir `enrollmentService.js`, combinando datos de `students`, `courses` y `enrollments` en una sola consulta.
 - Practicar el diagnóstico de errores comunes de React (`is not defined`) mediante la consola del navegador.
 
----
 
 ## 4. Componente `Header` — encabezado reutilizable de página
 
