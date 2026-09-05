@@ -5,7 +5,7 @@ import { Outlet } from 'react-router-dom';
 export default function Layout() {
   return (
     <div className="flex h-screen bg-slate-50">
-      {/* Aquí iría tu barra lateral o menú */}
+      {/* Aquí va la barra lateral o menú */}
       <aside className="w-64 bg-white border-r border-slate-200">
         <h2 className="p-6 font-bold text-xl text-slate-800">Academia</h2>
         {/* Tus enlaces de navegación */}

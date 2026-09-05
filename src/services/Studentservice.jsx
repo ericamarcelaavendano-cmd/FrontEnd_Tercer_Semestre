@@ -44,3 +44,16 @@ export async function buscarEstudiantesPorNombre(texto) {
 
   return data
 }
+export async function createStudent(student) {
+  const { data, error } = await supabase
+    .from('students')
+    .insert([student])
+    .select()
+
+  if (error) {
+    console.error('Error al crear estudiante:', error.message)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, data: data[0] }
+}

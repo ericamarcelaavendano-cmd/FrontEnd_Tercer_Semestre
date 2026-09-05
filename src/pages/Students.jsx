@@ -2,36 +2,51 @@ import { useEffect, useState } from 'react'
 import { getStudents, buscarEstudiantesPorNombre } from '../services/studentService'
 import Header from '../components/Header'
 import StudentTable from '../components/StudentTable'
+import StudentForm from '../components/StudentForm'
 import Footer from '../components/Footer'
 
 function Students() {
   const [students, setStudents] = useState([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
+  const [mostrarFormulario, setMostrarFormulario] = useState(false)
+
+  async function cargarEstudiantes() {
+    setCargando(true)
+    const data = busqueda.trim() === ''
+      ? await getStudents()
+      : await buscarEstudiantesPorNombre(busqueda)
+    setStudents(data)
+    setCargando(false)
+  }
 
   useEffect(() => {
-    async function buscar() {
-      setCargando(true)
-      const data = busqueda.trim() === ''
-        ? await getStudents()
-        : await buscarEstudiantesPorNombre(busqueda)
-      setStudents(data)
-      setCargando(false)
-    }
-
-    const timeoutId = setTimeout(buscar, 400)
+    const timeoutId = setTimeout(cargarEstudiantes, 400)
     return () => clearTimeout(timeoutId)
   }, [busqueda])
+
+  function handleSuccess() {
+    setMostrarFormulario(false)
+    cargarEstudiantes()
+  }
 
   return (
     <div>
       <Header
         title="Students"
-        description="Estudiantes registrados"
+        description="Estudiantes registrados en Supabase"
         txtButton="+ Nuevo Estudiante"
+        onButtonClick={() => setMostrarFormulario(true)}
       />
 
       <main className="px-6">
+        {mostrarFormulario && (
+          <StudentForm
+            onSuccess={handleSuccess}
+            onCancel={() => setMostrarFormulario(false)}
+          />
+        )}
+
         <input
           type="text"
           placeholder="Buscar por nombre o apellido..."
